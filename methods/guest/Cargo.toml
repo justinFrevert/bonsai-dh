@@ -1,0 +1,20 @@
+[package]
+name = "dh-methods-guest"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+# NOTE: ethabi is used here instead of ethers because ethers requires getrandom support.
+ethabi = { version = "18.0", default-features = false }
+# Must match RISC Zero version specified in the project root.
+risc0-zkvm = { version = "0.15.0", default-features = false }
+risc0-zkvm-platform = { version = "0.15.0", default-features = false }
+
+cryptoxide = { version = "0.4.4", default-features = false, features = ["curve25519", "x25519"] }
+aes-gcm = { version  = "0.10.2", default-features = false, features = ["alloc", "aes"]}
+
+[profile.release]
+lto = true
+opt-level = 3

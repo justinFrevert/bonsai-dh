@@ -1,0 +1,18 @@
+[package]
+name = "dh-methods"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+risc0-build = { workspace = true }
+
+[dev-dependencies]
+ethabi = { version = "18.0", default-features = false }
+risc0-zkp = { workspace = true }
+risc0-zkvm = { workspace = true }
+env_logger = "0.10.0"
+sp-core = "21.0.0"
+hex = "0.4.3"
+
+[package.metadata.risc0]
+methods = ["guest"]

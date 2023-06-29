@@ -1,0 +1,27 @@
+[package]
+name = "dh-contracts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ethers = { version = "1.0", features = ["ws", "rustls"] }
+
+[build-dependencies]
+ethers-solc = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+dh-methods = { workspace = true }
+risc0-zkvm = { workspace = true }
+tokio = { version = "1.24", features = ["full"] }
+log = "0.4.0"
+env_logger = "0.10.0"
+tracing = "0.1"
+tracing-test = "0.1"
+ethabi = { version = "18.0", default-features = false }
+cryptoxide = { version = "0.4.4", default-features = false, features = ["curve25519", "x25519"] }
+aes-gcm = { version  = "0.10.2", default-features = false, features = ["alloc", "aes"]}
+
+[features]
+cuda = ["risc0-zkvm/cuda"]
+default = []
+metal = ["risc0-zkvm/metal"]
