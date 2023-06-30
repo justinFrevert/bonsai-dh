@@ -28,31 +28,41 @@ contract DH is BonsaiApp {
     // Store the cipherText encrypted with the shared key.
     bytes cipherText;
     // The ciphertext is stored encrypted with a nonce
-    bytes nonce;
+    // bytes nonce;
+    uint256 nonce;
 
     // Initialize the contract, binding it to a specified Bonsai proxy and RISC Zero guest image.
     constructor(IBonsaiProxy _bonsai_proxy, bytes32 _image_id)
         BonsaiApp(_bonsai_proxy, _image_id)
-    {}
+    {
+        nonce = 0;
+    }
 
     event CalculateFibonacciCallback(bytes n, bytes result);
 
-    // Send the user's key to the ZKVM. Note: this doesn't prove ownership of the key. 
-    // In real applications, a message signed by this given key with enough information to prove ownership would need to be verified here or even in the guest
+    // Send the user's key to the ZKVM. Note: this doesn't prove ownership of the key.
+    // Depending on the security requirements of the application, a message signed by this given key with enough information to prove ownership would need to be verified here or even in the guest
     function sendKey(bytes32 x25519PubKey) external {
-        submit_bonsai_request(abi.encode(x25519PubKey));
+        nonce += 1;
+        submit_bonsai_request(abi.encode(
+            x25519PubKey,
+            nonce
+            ));
     }
 
     function bonsai_callback(bytes memory journal) internal override {
-        (bytes memory _cipherText, bytes memory _otherPartyPublic, bytes memory _nonce) = abi.decode(
-            journal,
-            (bytes, bytes, bytes)
-        );
+        (
+            bytes memory _cipherText,
+            bytes memory _otherPartyPublic,
+            uint256 _nonce
+        ) = abi.decode(journal, (bytes, bytes, uint256));
+
+        require(_nonce == nonce);
 
         // Store the values needed for deciphering the secret message: the message itself, and the other party's key to form the shared secret
         cipherText = _cipherText;
         otherPartyPublic = _otherPartyPublic;
-        nonce = _nonce;
+        // nonce = _nonce;
 
         emit CalculateFibonacciCallback(_cipherText, _otherPartyPublic);
     }
@@ -68,7 +78,7 @@ contract DH is BonsaiApp {
     }
 
     // Get a nonce used for decryption of the ciphertext
-    function getNonce() public view returns (bytes memory) {
-        return cipherText;
+    function getNonce() public view returns (uint256) {
+        return nonce;
     }
 }

@@ -16,7 +16,7 @@
 //! applications that use the Bonsai proxy to make requests for processing by a
 //! RISC Zero guest by providing utilities to run a mock of Bonsai.
 
-use std::{collections::HashMap, error::Error, future::Future, ops::Deref, sync::Arc};
+use std::{collections::HashMap, error::Error, future::Future, sync::Arc};
 
 use ethers::{
     core::k256::ecdsa::SigningKey,
@@ -88,7 +88,6 @@ impl BonsaiMock {
                         ));
 
                     let input = submit_request_log.input;
-
                     let env = ExecutorEnv::builder().add_input(&input).build();
                     let mut exec = Executor::from_elf(env, elf.as_ref()).unwrap();
                     exec.run().unwrap()

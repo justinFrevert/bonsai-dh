@@ -15,7 +15,7 @@
 #![no_main]
 #![no_std]
 
-use ethabi::{ethereum_types::U256, Token};
+use ethabi::Token;
 use risc0_zkvm::guest::env;
 use risc0_zkvm_platform::syscall::nr::SYS_RANDOM;
 use cryptoxide::x25519::{base, dh, PublicKey, SecretKey};
@@ -28,7 +28,8 @@ use alloc::vec;
 
 risc0_zkvm::guest::entry!(main);
 
-const INPUT_LEN: usize = core::mem::size_of::<U256>();
+// const INPUT_LEN: usize = core::mem::size_of::<U256>();
+const INPUT_LEN: usize = 64;
 
 // Wrap a SYS_RANDOM Risc0 ZKVM call to get random bytes
 fn syscall_random() -> [u8; 32] {
@@ -59,7 +60,16 @@ pub fn main() {
     let mut input_bytes = [0u8; INPUT_LEN];
     env::read_slice(&mut input_bytes);
 
-    let other_public = PublicKey::try_from(input_bytes).expect("Input bytes shouldn't exceed the max expected length");
+    let pub_key_input_bytes: [u8;32]  = input_bytes[0..32].try_into().unwrap();
+
+    let other_public = PublicKey::try_from(pub_key_input_bytes).expect("Input bytes shouldn't exceed the max expected length");
+
+    let nonce_number = ethabi::decode(&[ethabi::ParamType::Uint(256)], &input_bytes[32..])
+        // TODO: remove panic
+        .expect("Input bytes shouldn't exceed the max expected length");
+
+    // Nonce accepts 12 at max. That means that the nonce can only increase up to a certain size
+    let nonce = Nonce::<Aes256Gcm>::from_slice(&input_bytes[52..64]);
 
     let (ephemeral_secret, ephemeral_public) = generate_keypair_x25519();
 
@@ -72,23 +82,16 @@ pub fn main() {
     // Get some data or result of a computation to use as the private message
     let plaintext = b"hello world!";
 
-    let random_bytes = syscall_random();
-
-    let nonce = Nonce::<Aes256Gcm>::from_slice(&[42; 12]);
-    // let nonce = Nonce::<Aes256Gcm>::from_slice(
-    //     &random_bytes[0..12]
-    // );
-
     // TODO: Look into whether this may have a max
     let ciphertext = key
         .encrypt(&nonce, plaintext.as_ref())
         .expect("Encryption failed");
 
-    // Commit the journal that will be decoded in the application contract.
+    // Commit to the journal the ciphertext, the public key needed to construct the other secret, and the expected nonce
     env::commit_slice(&ethabi::encode(
         &[
         Token::Bytes(ciphertext),
         Token::Bytes(ephemeral_public.as_ref().to_vec()),
-        Token::Bytes(nonce.to_vec()),
+        nonce_number.get(0).expect("Nonce should exist").clone()
     ]));
 }
